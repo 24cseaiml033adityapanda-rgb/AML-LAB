@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Linear Regression Analysis Tool</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -39,12 +38,22 @@
                     </table>
                 </div>
 
-                <button id="visualizeBtn" class="btn success-btn">Visualize</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button id="visualizeBtn" class="btn success-btn" style="flex: 1;">Visualize</button>
+                    <button id="predictMainBtn" class="btn primary-btn" style="flex: 1;">Predict</button>
+                </div>
                 <div id="errorMsg" class="error-msg"></div>
             </section>
 
+            <section class="chart-section hidden" id="chartSection">
+                <h2>Visualization</h2>
+                <div class="chart-container" style="text-align: center;">
+                    <img id="regressionImage" src="" alt="Regression Plot" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                </div>
+            </section>
+
             <section class="results-section hidden" id="resultsSection">
-                <h2>Results</h2>
+                <h2>Calculation Results</h2>
                 <div class="metrics-grid">
                     <div class="metric-card">
                         <h3>Equation</h3>
@@ -83,10 +92,6 @@
                         <p id="resR2">-</p>
                     </div>
                 </div>
-
-                <div class="chart-container">
-                    <canvas id="regressionChart"></canvas>
-                </div>
             </section>
 
             <section class="prediction-section hidden" id="predictionSection">
@@ -105,12 +110,12 @@
         let xData = [];
         let yData = [];
         let currentModel = null;
-        let chart = null;
 
         const xInput = document.getElementById('xValue');
         const yInput = document.getElementById('yValue');
         const addBtn = document.getElementById('addPointBtn');
         const visualizeBtn = document.getElementById('visualizeBtn');
+        const predictMainBtn = document.getElementById('predictMainBtn');
         const dataBody = document.getElementById('dataBody');
         const errorMsg = document.getElementById('errorMsg');
         
@@ -130,6 +135,7 @@
             xInput.value = '';
             yInput.value = '';
             hideError();
+            hideAllSections();
         });
 
         function updateTable() {
@@ -149,6 +155,7 @@
             xData.splice(index, 1);
             yData.splice(index, 1);
             updateTable();
+            hideAllSections();
         };
 
         function showError(msg) {
@@ -160,10 +167,19 @@
             errorMsg.style.display = 'none';
         }
 
-        visualizeBtn.addEventListener('click', async () => {
+        function hideAllSections() {
+            const chartSec = document.getElementById('chartSection');
+            const resSec = document.getElementById('resultsSection');
+            const predSec = document.getElementById('predictionSection');
+            if(chartSec) chartSec.classList.add('hidden');
+            if(resSec) resSec.classList.add('hidden');
+            if(predSec) predSec.classList.add('hidden');
+        }
+
+        async function fetchCalculations() {
             if (xData.length < 2) {
                 showError("Please add at least 2 data points.");
-                return;
+                return false;
             }
             hideError();
             
@@ -180,13 +196,32 @@
                     currentModel = data;
                     displayResults(data);
                     drawChart(data);
-                    document.getElementById('resultsSection').classList.remove('hidden');
-                    document.getElementById('predictionSection').classList.remove('hidden');
+                    return true;
                 } else {
                     showError(data.error || "An error occurred during calculation.");
+                    return false;
                 }
             } catch (err) {
                 showError("Failed to connect to the server.");
+                return false;
+            }
+        }
+
+        visualizeBtn.addEventListener('click', async () => {
+            const success = await fetchCalculations();
+            if (success) {
+                document.getElementById('chartSection').classList.remove('hidden');
+                document.getElementById('resultsSection').classList.add('hidden');
+                document.getElementById('predictionSection').classList.add('hidden');
+            }
+        });
+
+        predictMainBtn.addEventListener('click', async () => {
+            const success = await fetchCalculations();
+            if (success) {
+                document.getElementById('chartSection').classList.add('hidden');
+                document.getElementById('resultsSection').classList.remove('hidden');
+                document.getElementById('predictionSection').classList.remove('hidden');
             }
         });
 
@@ -203,60 +238,8 @@
         }
 
         function drawChart(data) {
-            const ctx = document.getElementById('regressionChart').getContext('2d');
-            
-            if (chart) {
-                chart.destroy();
-            }
-            
-            const scatterData = xData.map((x, i) => ({ x: x, y: yData[i] }));
-            const lineData = xData.map((x, i) => ({ x: x, y: data.y_pred_line[i] }));
-            
-            // Sort line data by X to draw a proper line
-            lineData.sort((a, b) => a.x - b.x);
-            
-            chart = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [
-                        {
-                            label: 'Data Points',
-                            data: scatterData,
-                            backgroundColor: '#3498db',
-                            pointRadius: 6
-                        },
-                        {
-                            label: 'Regression Line',
-                            data: lineData,
-                            type: 'line',
-                            borderColor: '#e74c3c',
-                            borderWidth: 2,
-                            fill: false,
-                            pointRadius: 0
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            position: 'bottom',
-                            title: {
-                                display: true,
-                                text: 'X Value'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Y Value'
-                            }
-                        }
-                    }
-                }
-            });
+            const img = document.getElementById('regressionImage');
+            img.src = 'data:image/png;base64,' + data.plot_url;
         }
 
         document.getElementById('predictBtn').addEventListener('click', async () => {

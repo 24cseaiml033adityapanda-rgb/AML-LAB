@@ -1,3 +1,8 @@
+import io
+import base64
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
@@ -59,6 +64,30 @@ def calculate():
     result = calculate_linear_regression(x_vals, y_vals)
     if result is None:
         return jsonify({"error": "Variance in X is 0 (all X values are the same)."}), 400
+        
+    plt.figure(figsize=(8, 5))
+    plt.scatter(x_vals, y_vals, color='#3498db', label='Data Points', zorder=5)
+    
+    y_pred_line = result['y_pred_line']
+    sorted_pairs = sorted(zip(x_vals, y_pred_line))
+    x_sorted = [p[0] for p in sorted_pairs]
+    y_sorted = [p[1] for p in sorted_pairs]
+    
+    plt.plot(x_sorted, y_sorted, color='#e74c3c', label='Regression Line', linewidth=2)
+    plt.xlabel('X Value')
+    plt.ylabel('Y Value')
+    plt.title('Linear Regression Plot')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode('utf8')
+    plt.close()
+    
+    result['plot_url'] = plot_url
         
     return jsonify(result)
 
