@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Regression Analysis Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Linear Regression Analysis Tool</h1>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <h2>Data Input</h2>
+                <div class="input-group">
+                    <label for="xValue">X Value:</label>
+                    <input type="number" id="xValue" step="any" placeholder="Enter X">
+                    <label for="yValue">Y Value:</label>
+                    <input type="number" id="yValue" step="any" placeholder="Enter Y">
+                    <button id="addPointBtn" class="btn primary-btn">Add Data Point</button>
+                </div>
+
+                <div class="data-table-container">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>X</th>
+                                <th>Y</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataBody">
+                            <!-- Data points will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <button id="visualizeBtn" class="btn success-btn">Visualize</button>
+                <div id="errorMsg" class="error-msg"></div>
+            </section>
+
+            <section class="results-section hidden" id="resultsSection">
+                <h2>Results</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h3>Equation</h3>
+                        <p id="resEquation">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Slope (m)</h3>
+                        <p id="resSlope">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Intercept (c)</h3>
+                        <p id="resIntercept">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Mean X</h3>
+                        <p id="resMeanX">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Mean Y</h3>
+                        <p id="resMeanY">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>MAE</h3>
+                        <p id="resMae">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>MSE</h3>
+                        <p id="resMse">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>RMSE</h3>
+                        <p id="resRmse">-</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>R² Score</h3>
+                        <p id="resR2">-</p>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="regressionChart"></canvas>
+                </div>
+            </section>
+
+            <section class="prediction-section hidden" id="predictionSection">
+                <h2>Predict Y</h2>
+                <div class="input-group">
+                    <label for="predictX">Enter X value:</label>
+                    <input type="number" id="predictX" step="any" placeholder="Enter X to predict Y">
+                    <button id="predictBtn" class="btn primary-btn">Predict</button>
+                </div>
+                <div class="prediction-result" id="predictionResult"></div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let xData = [];
+        let yData = [];
+        let currentModel = null;
+        let chart = null;
+
+        const xInput = document.getElementById('xValue');
+        const yInput = document.getElementById('yValue');
+        const addBtn = document.getElementById('addPointBtn');
+        const visualizeBtn = document.getElementById('visualizeBtn');
+        const dataBody = document.getElementById('dataBody');
+        const errorMsg = document.getElementById('errorMsg');
+        
+        addBtn.addEventListener('click', () => {
+            const x = parseFloat(xInput.value);
+            const y = parseFloat(yInput.value);
+            
+            if (isNaN(x) || isNaN(y)) {
+                showError("Please enter valid numbers for both X and Y.");
+                return;
+            }
+            
+            xData.push(x);
+            yData.push(y);
+            
+            updateTable();
+            xInput.value = '';
+            yInput.value = '';
+            hideError();
+        });
+
+        function updateTable() {
+            dataBody.innerHTML = '';
+            for (let i = 0; i < xData.length; i++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${xData[i]}</td>
+                    <td>${yData[i]}</td>
+                    <td><button class="btn danger-btn small-btn" onclick="removePoint(${i})">Remove</button></td>
+                `;
+                dataBody.appendChild(tr);
+            }
+        }
+
+        window.removePoint = function(index) {
+            xData.splice(index, 1);
+            yData.splice(index, 1);
+            updateTable();
+        };
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMsg.style.display = 'none';
+        }
+
+        visualizeBtn.addEventListener('click', async () => {
+            if (xData.length < 2) {
+                showError("Please add at least 2 data points.");
+                return;
+            }
+            hideError();
+            
+            try {
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x: xData, y: yData })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentModel = data;
+                    displayResults(data);
+                    drawChart(data);
+                    document.getElementById('resultsSection').classList.remove('hidden');
+                    document.getElementById('predictionSection').classList.remove('hidden');
+                } else {
+                    showError(data.error || "An error occurred during calculation.");
+                }
+            } catch (err) {
+                showError("Failed to connect to the server.");
+            }
+        });
+
+        function displayResults(data) {
+            document.getElementById('resEquation').textContent = data.equation;
+            document.getElementById('resSlope').textContent = data.slope;
+            document.getElementById('resIntercept').textContent = data.intercept;
+            document.getElementById('resMeanX').textContent = data.mean_x;
+            document.getElementById('resMeanY').textContent = data.mean_y;
+            document.getElementById('resMae').textContent = data.mae;
+            document.getElementById('resMse').textContent = data.mse;
+            document.getElementById('resRmse').textContent = data.rmse;
+            document.getElementById('resR2').textContent = data.r2;
+        }
+
+        function drawChart(data) {
+            const ctx = document.getElementById('regressionChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            const scatterData = xData.map((x, i) => ({ x: x, y: yData[i] }));
+            const lineData = xData.map((x, i) => ({ x: x, y: data.y_pred_line[i] }));
+            
+            // Sort line data by X to draw a proper line
+            lineData.sort((a, b) => a.x - b.x);
+            
+            chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Data Points',
+                            data: scatterData,
+                            backgroundColor: '#3498db',
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Regression Line',
+                            data: lineData,
+                            type: 'line',
+                            borderColor: '#e74c3c',
+                            borderWidth: 2,
+                            fill: false,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: {
+                                display: true,
+                                text: 'X Value'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Y Value'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('predictBtn').addEventListener('click', async () => {
+            const x = parseFloat(document.getElementById('predictX').value);
+            if (isNaN(x) || !currentModel) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        x: x, 
+                        m: currentModel.slope, 
+                        c: currentModel.intercept 
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('predictionResult').innerHTML = 
+                        `<strong>Predicted Y:</strong> ${data.prediction}`;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>

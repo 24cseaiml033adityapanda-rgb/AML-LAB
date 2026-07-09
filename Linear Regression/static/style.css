@@ -1,0 +1,177 @@
+:root {
+    --primary-color: #3498db;
+    --primary-hover: #2980b9;
+    --success-color: #2ecc71;
+    --success-hover: #27ae60;
+    --danger-color: #e74c3c;
+    --danger-hover: #c0392b;
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --border-color: #e0e0e0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+h1 {
+    color: var(--primary-color);
+    font-size: 2rem;
+}
+
+h2 {
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+    color: #2c3e50;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+section {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+input[type="number"] {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    width: 150px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: white;
+}
+
+.primary-btn { background-color: var(--primary-color); }
+.primary-btn:hover { background-color: var(--primary-hover); }
+
+.success-btn { background-color: var(--success-color); width: 100%; font-size: 1.1rem; padding: 15px;}
+.success-btn:hover { background-color: var(--success-hover); }
+
+.danger-btn { background-color: var(--danger-color); }
+.danger-btn:hover { background-color: var(--danger-hover); }
+
+.small-btn { padding: 5px 10px; font-size: 0.9rem; }
+
+.data-table-container {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: #f1f3f5;
+    position: sticky;
+    top: 0;
+}
+
+.hidden {
+    display: none;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.metric-card {
+    background-color: #f1f3f5;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.metric-card h3 {
+    font-size: 1rem;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+}
+
+.metric-card p {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.error-msg {
+    color: var(--danger-color);
+    margin-top: 10px;
+    font-weight: bold;
+    display: none;
+}
+
+.prediction-result {
+    margin-top: 15px;
+    font-size: 1.25rem;
+    color: var(--success-color);
+}
+
+@media (max-width: 600px) {
+    .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    input[type="number"] {
+        width: 100%;
+    }
+}
