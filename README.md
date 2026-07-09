@@ -1,1 +1,1 @@
-Linear Regression live website url : https://linearregression.vercel.app/
+Linear Regression live website url : https://linearregressions.vercel.app/
