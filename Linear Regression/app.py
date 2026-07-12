@@ -1,3 +1,5 @@
+import os
+os.environ['MPLCONFIGDIR'] = '/tmp'
 import io
 import base64
 import matplotlib
@@ -66,14 +68,14 @@ def calculate():
         return jsonify({"error": "Variance in X is 0 (all X values are the same)."}), 400
         
     plt.figure(figsize=(8, 5))
-    plt.scatter(x_vals, y_vals, color='#3498db', label='Data Points', zorder=5)
+    plt.scatter(x_vals, y_vals, color="#0fa414", label='Data Points', zorder=5)
     
     y_pred_line = result['y_pred_line']
     sorted_pairs = sorted(zip(x_vals, y_pred_line))
     x_sorted = [p[0] for p in sorted_pairs]
     y_sorted = [p[1] for p in sorted_pairs]
     
-    plt.plot(x_sorted, y_sorted, color='#e74c3c', label='Regression Line', linewidth=2)
+    plt.plot(x_sorted, y_sorted, color="#df166d", label='Regression Line', linewidth=2)
     plt.xlabel('X Value')
     plt.ylabel('Y Value')
     plt.title('Linear Regression Plot')
@@ -86,8 +88,34 @@ def calculate():
     img.seek(0)
     plot_url = base64.b64encode(img.getvalue()).decode('utf8')
     plt.close()
-    
     result['plot_url'] = plot_url
+    
+    metrics = ['MAE', 'MSE', 'RMSE', 'R²']
+    vals = [result['mae'], result['mse'], result['rmse'], result['r2']]
+    colors = ['#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6']
+    
+    plt.figure(figsize=(8, 5))
+    for i in range(len(metrics)):
+        plt.scatter(metrics[i], vals[i], color=colors[i], s=150, zorder=5)
+        
+    plt.title('Evaluation Metrics')
+    plt.ylabel('Value')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.margins(y=0.2)
+    
+    max_val = max(vals) if vals else 1
+    val_range = (max(vals) - min(vals)) if vals and (max(vals) != min(vals)) else max_val
+    for i, v in enumerate(vals):
+        plt.text(metrics[i], v + 0.05 * val_range, str(v), ha='center', va='bottom')
+        
+    plt.tight_layout()
+    img_metrics = io.BytesIO()
+    plt.savefig(img_metrics, format='png')
+    img_metrics.seek(0)
+    metrics_plot_url = base64.b64encode(img_metrics.getvalue()).decode('utf8')
+    plt.close()
+    
+    result['metrics_plot_url'] = metrics_plot_url
         
     return jsonify(result)
 

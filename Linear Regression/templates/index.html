@@ -47,8 +47,12 @@
 
             <section class="chart-section hidden" id="chartSection">
                 <h2>Visualization</h2>
-                <div class="chart-container" style="text-align: center;">
+                <div class="chart-container" style="text-align: center; margin-bottom: 20px;">
                     <img id="regressionImage" src="" alt="Regression Plot" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                </div>
+                <h2>Evaluation Metrics Plot</h2>
+                <div class="chart-container" style="text-align: center;">
+                    <img id="metricsImage" src="" alt="Metrics Plot" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none;">
                 </div>
             </section>
 
@@ -240,6 +244,14 @@
         function drawChart(data) {
             const img = document.getElementById('regressionImage');
             img.src = 'data:image/png;base64,' + data.plot_url;
+            
+            const metricsImg = document.getElementById('metricsImage');
+            if (data.metrics_plot_url) {
+                metricsImg.src = 'data:image/png;base64,' + data.metrics_plot_url;
+                metricsImg.style.display = 'inline';
+            } else {
+                metricsImg.style.display = 'none';
+            }
         }
 
         document.getElementById('predictBtn').addEventListener('click', async () => {
